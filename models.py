@@ -11,6 +11,7 @@ class Entry(db.Model):
     c2 = db.Column(db.Boolean, default=False, nullable=False)
     c3 = db.Column(db.Boolean, default=False, nullable=False)
     c4 = db.Column(db.Boolean, default=False, nullable=False)
+    inAttendance = db.Column(db.Boolean, default=False, nullable=False)
     is_selected = db.Column(db.Boolean, default=False, nullable=False)
     #selection_time = db.Column(db.DateTime, nullable=True)
 

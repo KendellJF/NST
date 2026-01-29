@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template, current_app, make_response
 from models import db, Entry
+from scripts.import_initial_csv import normalize_handle
 
 # Import draw controller and auth helpers
 from Controllers.draw import drawWinners, resetSelection
@@ -27,14 +28,17 @@ def submit_entry():
     - c1..c4 (booleans or values convertable to bool)
     """
     data = request.get_json() if request.is_json else request.form
-    handle = (data.get('instagram_handle') or '').strip()
+    raw_handle = data.get('instagram_handle') or ''
+    handle = normalize_handle(raw_handle)
     if not handle:
         return jsonify({'error': 'instagram_handle required'}), 400
 
-    # Check for duplicate
+    # Check for existing entry; if present mark attendance, otherwise add
     existing = Entry.query.filter_by(instagram_handle=handle).first()
     if existing:
-        return jsonify({'error': 'handle already entered'}), 409
+        existing.inAttendance = True
+        db.session.commit()
+        return jsonify({'message': 'attendance recorded', 'handle': handle}), 200
 
     # Parse criteria (accept 'on', '1', true-ish values)
     def to_bool(v):
@@ -51,6 +55,7 @@ def submit_entry():
         c2=to_bool(data.get('c2')),
         c3=to_bool(data.get('c3')),
         c4=to_bool(data.get('c4')),
+        inAttendance=True,
     )
     db.session.add(e)
     db.session.commit()
@@ -107,12 +112,12 @@ def admin_draw():
 def admin_export():
     # Export all entries as CSV for audit
     import csv, io
-    cols = ['id', 'instagram_handle', 'entered_at', 'c1', 'c2', 'c3', 'c4', 'is_selected']
+    cols = ['id', 'instagram_handle', 'entered_at', 'c1', 'c2', 'c3', 'c4', 'inAttendance', 'is_selected']
     si = io.StringIO()
     writer = csv.writer(si)
     writer.writerow(cols)
     for e in Entry.query.order_by(Entry.id).all():
-        writer.writerow([e.id, e.instagram_handle, e.entered_at, e.c1, e.c2, e.c3, e.c4, e.is_selected])
+        writer.writerow([e.id, e.instagram_handle, e.entered_at, e.c1, e.c2, e.c3, e.c4, e.inAttendance, e.is_selected])
     output = make_response(si.getvalue())
     output.headers['Content-Type'] = 'text/csv'
     output.headers['Content-Disposition'] = 'attachment; filename=entries.csv'

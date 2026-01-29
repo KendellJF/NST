@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Event Check-in</title>
+	<link rel="stylesheet" href="/static/styles.css">
+	<style>
+		body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px}
+		.card{max-width:560px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:8px}
+		label{display:block;margin:8px 0}
+		.inline{display:inline-block;margin-right:12px}
+		#result{margin-top:12px}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<h1>Event Check-in</h1>
+		<form id="checkin">
+			<label>
+				Instagram handle
+				<input type="text" name="instagram_handle" id="instagram_handle" placeholder="e.g. @username" required>
+			</label>
+
+			<div>
+				<label class="inline"><input type="checkbox" name="c1" value="1"> Criteria 1</label>
+				<label class="inline"><input type="checkbox" name="c2" value="1"> Criteria 2</label>
+				<label class="inline"><input type="checkbox" name="c3" value="1"> Criteria 3</label>
+				<label class="inline"><input type="checkbox" name="c4" value="1"> Criteria 4</label>
+			</div>
+
+			<div style="margin-top:12px">
+				<button type="submit">Submit</button>
+				<button type="button" id="clear">Clear</button>
+			</div>
+		</form>
+
+		<div id="result" aria-live="polite"></div>
+		<hr>
+		<p style="font-size:0.9rem;color:#666">If you're attending and your handle is on the invited list, check-in will be recorded. If not, you'll be added to the list.</p>
+	</div>
+
+	<script>
+		function normalize(h){ if(!h) return ''; h = h.trim(); if(h.startsWith('@')) h = h.slice(1); return h.toLowerCase(); }
+
+		document.getElementById('checkin').addEventListener('submit', async function(e){
+			e.preventDefault();
+			const form = e.target;
+			const handle = normalize(form.instagram_handle.value);
+			if(!handle){ document.getElementById('result').textContent = 'Enter a handle.'; return; }
+
+			const payload = {
+				instagram_handle: handle,
+				c1: form.c1.checked,
+				c2: form.c2.checked,
+				c3: form.c3.checked,
+				c4: form.c4.checked
+			};
+
+			try{
+				const res = await fetch('/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+				const js = await res.json().catch(()=>({}));
+				if(res.status >= 200 && res.status < 300){
+					document.getElementById('result').textContent = js.message || 'OK';
+					form.reset();
+				} else {
+					document.getElementById('result').textContent = js.error || ('Error: ' + res.status);
+				}
+			}catch(err){ document.getElementById('result').textContent = 'Network error'; }
+		});
+
+		document.getElementById('clear').addEventListener('click', ()=>{ document.getElementById('checkin').reset(); document.getElementById('result').textContent=''; });
+	</script>
+</body>
+</html>
