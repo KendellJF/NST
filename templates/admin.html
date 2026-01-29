@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Admin Panel</title>
+	<link rel="stylesheet" href="/static/styles.css">
+	<style>
+		body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px;background:#f9f9f9}
+		.container{max-width:900px;margin:0 auto}
+		.card{background:#fff;padding:20px;margin:16px 0;border:1px solid #ddd;border-radius:8px}
+		h1{margin-top:0}
+		button{padding:10px 20px;margin:4px;cursor:pointer;border:1px solid #0066cc;background:#0066cc;color:#fff;border-radius:4px}
+		button:hover{background:#0052a3}
+		button.secondary{background:#fff;color:#0066cc}
+		button.secondary:hover{background:#f0f8ff}
+		#result,#drawResult{margin-top:12px;padding:8px;border-radius:4px}
+		.success{background:#e8f5e9;color:#2e7d32}
+		.error{background:#ffebee;color:#c62828}
+		table{width:100%;border-collapse:collapse;margin-top:12px}
+		th,td{padding:8px;text-align:left;border-bottom:1px solid #eee}
+		th{background:#f5f5f5}
+		input[type=text],input[type=password]{padding:8px;width:200px;border:1px solid #ccc;border-radius:4px}
+		label{display:block;margin:8px 0}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>Admin Panel</h1>
+
+		<!-- Login Section -->
+		<div class="card" id="loginCard">
+			<h2>Login</h2>
+			<form id="loginForm">
+				<label>Username <input type="text" name="username" required></label>
+				<label>Password <input type="password" name="password" required></label>
+				<button type="submit">Login</button>
+			</form>
+			<div id="result"></div>
+		</div>
+
+		<!-- Protected Admin Controls (hidden until logged in) -->
+		<div class="card" id="adminControls" style="display:none">
+			<h2>Draw Winners</h2>
+			<p>Click below to randomly select 4 winners from eligible attendees (all criteria must be true).</p>
+			<button id="drawBtn">Run Draw</button>
+			<button class="secondary" id="exportBtn">Export CSV</button>
+			<div id="drawResult"></div>
+		</div>
+
+		<div class="card" id="attendeeList" style="display:none">
+			<h2>Attendees</h2>
+			<p><span id="attendeeCount">0</span> checked in · <span id="eligibleCount">0</span> eligible</p>
+			<button class="secondary" id="refreshBtn">Refresh</button>
+			<table id="attendeeTable">
+				<thead>
+					<tr><th>Handle</th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>Attended</th><th>Selected</th></tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+	</div>
+
+	<script>
+		let token = localStorage.getItem('access_token');
+		if(token){ showAdmin(); }
+
+		document.getElementById('loginForm').addEventListener('submit', async function(e){
+			e.preventDefault();
+			const form = e.target;
+			const payload = { username: form.username.value, password: form.password.value };
+			try{
+				const res = await fetch('/admin/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+				const js = await res.json().catch(()=>({}));
+				if(res.ok){
+					token = js.access_token;
+					localStorage.setItem('access_token', token);
+					showResult('Logged in!', 'success');
+					setTimeout(showAdmin, 500);
+				} else {
+					showResult(js.error || 'Login failed', 'error');
+				}
+			}catch(err){ showResult('Network error', 'error'); }
+		});
+
+		document.getElementById('drawBtn').addEventListener('click', async ()=>{
+			if(!token) return;
+			try{
+				const res = await fetch('/admin/draw', {method:'POST', headers:{'Authorization':'Bearer '+token}});
+				const js = await res.json().catch(()=>({}));
+				if(res.ok){
+					const winners = js.winners || [];
+					showDrawResult(`Draw complete! ${winners.length} winner(s): ${winners.map(w=>w.handle).join(', ')}`, 'success');
+					loadAttendees();
+				} else {
+					showDrawResult(js.error || 'Draw failed', 'error');
+				}
+			}catch(err){ showDrawResult('Network error', 'error'); }
+		});
+
+		document.getElementById('exportBtn').addEventListener('click', ()=>{
+			if(!token) return;
+			window.location.href = '/admin/export';
+		});
+
+		document.getElementById('refreshBtn').addEventListener('click', loadAttendees);
+
+		function showAdmin(){
+			document.getElementById('loginCard').style.display = 'none';
+			document.getElementById('adminControls').style.display = 'block';
+			document.getElementById('attendeeList').style.display = 'block';
+			loadAttendees();
+		}
+
+		function showResult(msg, type){
+			const el = document.getElementById('result');
+			el.textContent = msg;
+			el.className = type;
+		}
+
+		function showDrawResult(msg, type){
+			const el = document.getElementById('drawResult');
+			el.textContent = msg;
+			el.className = type;
+		}
+
+		async function loadAttendees(){
+			if(!token) return;
+			try{
+				const res = await fetch('/admin/attendees', {headers:{'Authorization':'Bearer '+token}});
+				const js = await res.json().catch(()=>({}));
+				if(res.ok && js.entries){
+					const entries = js.entries;
+					document.getElementById('attendeeCount').textContent = entries.filter(e=>e.inAttendance).length;
+					document.getElementById('eligibleCount').textContent = entries.filter(e=>e.c1&&e.c2&&e.c3&&e.c4).length;
+					const tbody = document.querySelector('#attendeeTable tbody');
+					tbody.innerHTML = entries.map(e=>`<tr>
+						<td>${e.handle}</td>
+						<td>${e.c1?'✓':'✗'}</td>
+						<td>${e.c2?'✓':'✗'}</td>
+						<td>${e.c3?'✓':'✗'}</td>
+						<td>${e.c4?'✓':'✗'}</td>
+						<td>${e.inAttendance?'✓':'✗'}</td>
+						<td>${e.is_selected?'✓':'✗'}</td>
+					</tr>`).join('');
+				}
+			}catch(err){}
+		}
+	</script>
+</body>
+</html>

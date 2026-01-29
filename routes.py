@@ -40,21 +40,13 @@ def submit_entry():
         db.session.commit()
         return jsonify({'message': 'attendance recorded', 'handle': handle}), 200
 
-    # Parse criteria (accept 'on', '1', true-ish values)
-    def to_bool(v):
-        if v is None:
-            return False
-        if isinstance(v, bool):
-            return v
-        v = str(v).lower()
-        return v in ('1', 'true', 'yes', 'on')
-
+    # New entries default criteria to False (will be set by admin/import)
     e = Entry(
         instagram_handle=handle,
-        c1=to_bool(data.get('c1')),
-        c2=to_bool(data.get('c2')),
-        c3=to_bool(data.get('c3')),
-        c4=to_bool(data.get('c4')),
+        c1=False,
+        c2=False,
+        c3=False,
+        c4=False,
         inAttendance=True,
     )
     db.session.add(e)
@@ -82,6 +74,15 @@ def healthz():
     return jsonify({'status': 'ok'})
 
 
+@admin_bp.route('/')
+def admin_page():
+    # Serve admin login/control panel
+    try:
+        return render_template('admin.html')
+    except Exception:
+        return jsonify({'message': 'Admin page not available'}), 200
+
+
 @admin_bp.route('/auth/login', methods=['POST'])
 def auth_login():
     data = request.get_json() or request.form or {}
@@ -105,6 +106,23 @@ def admin_draw():
     winners = drawWinners()
     out = [{'handle': w.instagram_handle} for w in winners]
     return jsonify({'winners': out})
+
+
+@admin_bp.route('/attendees', methods=['GET'])
+@jwt_required
+def admin_attendees():
+    # Return all entries as JSON for admin UI
+    entries = Entry.query.order_by(Entry.entered_at.desc()).all()
+    out = [{
+        'handle': e.instagram_handle,
+        'c1': e.c1,
+        'c2': e.c2,
+        'c3': e.c3,
+        'c4': e.c4,
+        'inAttendance': e.inAttendance,
+        'is_selected': e.is_selected
+    } for e in entries]
+    return jsonify({'entries': out})
 
 
 @admin_bp.route('/export', methods=['GET'])

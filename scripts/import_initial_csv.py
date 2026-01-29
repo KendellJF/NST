@@ -63,21 +63,8 @@ def import_csv(path: str, skip_existing=True):
     """Import CSV at `path` into the `Entry` table.
 
     This function expects to be run inside a Flask app context where
-    `models.db` and `models.Entry` are available. It will attempt to import
-    `create_app` from `app` and push an app context automatically if found.
+    `models.db` and `models.Entry` are available.
     """
-    # Lazy import Flask app and models to avoid import-time Flask dependency
-    try:
-        from app import create_app
-        app = create_app()
-        ctx = app.app_context()
-        ctx.push()
-        pushed = True
-    except Exception:
-        # Not fatal; maybe user will run this inside a Flask shell where app
-        # context already exists. We'll proceed without creating a context.
-        pushed = False
-
     try:
         from models import db, Entry
     except Exception as exc:
@@ -170,10 +157,6 @@ def import_csv(path: str, skip_existing=True):
 
         db.session.commit()
 
-    # Pop context if we pushed one
-    if pushed:
-        ctx.pop()
-
     print(f'Imported: {added}, Skipped: {skipped}')
     return {'added': added, 'skipped': skipped}
 
@@ -184,4 +167,8 @@ if __name__ == '__main__':
         print('Usage: python import_initial_csv.py path/to/file.csv')
         sys.exit(2)
     path = sys.argv[1]
-    import_csv(path)
+    # When run standalone, create app context
+    from app import create_app
+    app = create_app()
+    with app.app_context():
+        import_csv(path)

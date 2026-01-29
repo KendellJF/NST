@@ -13,7 +13,7 @@ def create_app(test_config=None):
     # Default configuration (override with env or instance/config.py)
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-secret'),
-        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///instance/app.db'),
+        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(app.instance_path, "app.db")}'),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         JWT_SECRET=os.environ.get('JWT_SECRET', 'change-me'),
         JWT_ALGORITHM=os.environ.get('JWT_ALGORITHM', 'HS256'),

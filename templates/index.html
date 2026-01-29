@@ -19,18 +19,11 @@
 		<form id="checkin">
 			<label>
 				Instagram handle
-				<input type="text" name="instagram_handle" id="instagram_handle" placeholder="e.g. @username" required>
+				<input type="text" name="instagram_handle" id="instagram_handle" placeholder="e.g. @username" required autofocus>
 			</label>
 
-			<div>
-				<label class="inline"><input type="checkbox" name="c1" value="1"> Criteria 1</label>
-				<label class="inline"><input type="checkbox" name="c2" value="1"> Criteria 2</label>
-				<label class="inline"><input type="checkbox" name="c3" value="1"> Criteria 3</label>
-				<label class="inline"><input type="checkbox" name="c4" value="1"> Criteria 4</label>
-			</div>
-
-			<div style="margin-top:12px">
-				<button type="submit">Submit</button>
+			<div style="margin-top:16px">
+				<button type="submit">Check In</button>
 				<button type="button" id="clear">Clear</button>
 			</div>
 		</form>
@@ -49,13 +42,7 @@
 			const handle = normalize(form.instagram_handle.value);
 			if(!handle){ document.getElementById('result').textContent = 'Enter a handle.'; return; }
 
-			const payload = {
-				instagram_handle: handle,
-				c1: form.c1.checked,
-				c2: form.c2.checked,
-				c3: form.c3.checked,
-				c4: form.c4.checked
-			};
+			const payload = { instagram_handle: handle };
 
 			try{
 				const res = await fetch('/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});

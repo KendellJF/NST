@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Winners</title>
+	<link rel="stylesheet" href="/static/styles.css">
+	<style>
+		body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;padding:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff}
+		.container{text-align:center;max-width:700px;padding:24px}
+		h1{font-size:3rem;margin:0 0 24px;text-shadow:2px 2px 8px rgba(0,0,0,0.3)}
+		#winners{margin-top:32px}
+		.winner{font-size:2rem;margin:16px 0;padding:16px;background:rgba(255,255,255,0.15);border-radius:12px;backdrop-filter:blur(10px);box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:fadeIn 0.6s ease-in-out}
+		.winner .rank{font-weight:bold;color:#ffd700}
+		.winner .handle{margin-left:12px}
+		.empty{font-size:1.2rem;color:rgba(255,255,255,0.8)}
+		@keyframes fadeIn{from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)}}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>🎉 Winners 🎉</h1>
+		<div id="winners" role="region" aria-live="polite">
+			<p class="empty">Loading...</p>
+		</div>
+	</div>
+
+	<script>
+		async function loadWinners(){
+			try{
+				const res = await fetch('/api/winners');
+				const winners = await res.json().catch(()=>[]);
+				const el = document.getElementById('winners');
+				if(!winners || winners.length === 0){
+					el.innerHTML = '<p class="empty">No winners yet. Stay tuned!</p>';
+					return;
+				}
+				el.innerHTML = winners.map((w,i)=>`<div class="winner"><span class="rank">#${i+1}</span><span class="handle">@${w.handle}</span></div>`).join('');
+			}catch(err){
+				document.getElementById('winners').innerHTML = '<p class="empty">Unable to load winners.</p>';
+			}
+		}
+
+		loadWinners();
+		setInterval(loadWinners, 5000); // Poll every 5s
+	</script>
+</body>
+</html>
