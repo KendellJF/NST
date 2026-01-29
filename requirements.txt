@@ -1,0 +1,14 @@
+
+# Web framework
+Flask>=2.0
+
+# Database
+Flask-SQLAlchemy>=3.0
+
+# JWT handling
+PyJWT>=2.6
+
+# Optional: environment config and DB migrations
+python-dotenv>=1.0
+Flask-Migrate>=4.0
+
