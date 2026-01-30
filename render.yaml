@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: nst-giveaway
+    env: python
+    region: oregon
+    plan: free
+    pythonVersion: 3.11
+    
+    # Build command
+    buildCommand: pip install -r requirements.txt
+    
+    # Start command
+    startCommand: gunicorn wsgi:app
+    
+    # Environment variables (set these in Render dashboard)
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////tmp/app.db
+      - key: PORT
+        value: 10000
+
+databases:
+  - name: nst-db
+    databaseName: nst_giveaway
+    user: nst_user
+    plan: free
+    region: oregon
+    postgresDatabaseVersion: 15
