@@ -4,22 +4,19 @@ from sqlalchemy import func
 from models import db, Entry
 
 def getEligible():
-    """Retrieve all eligible entries from the database."""
+    """Retrieve all attended entries (in attendance) that haven't been selected yet."""
     return Entry.query.filter(
-        Entry.c1 == True,
-        Entry.c2 == True,
-        Entry.c3 == True,
-        Entry.c4 == True,
+        Entry.inAttendance == True,
         Entry.is_selected == False
     ).all()
 
 def drawWinners():
-    """Randomly select winners from eligible entries."""
+    """Randomly select 4 winners from attended entries."""
     eligible_entries = getEligible()
     if not eligible_entries:
         return []
 
-    num_winners = min(num_winners, len(eligible_entries))
+    num_winners = min(4, len(eligible_entries))
     winners = random.sample(eligible_entries, num_winners)
 
     for winner in winners:
