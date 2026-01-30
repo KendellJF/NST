@@ -33,21 +33,16 @@ def submit_entry():
     if not handle:
         return jsonify({'error': 'instagram_handle required'}), 400
 
-    # Check for existing entry; if present mark attendance, otherwise add
+    # Check for existing entry
     existing = Entry.query.filter_by(instagram_handle=handle).first()
     if existing:
-        existing.inAttendance = True
-        db.session.commit()
-        return jsonify({'message': 'attendance recorded', 'handle': handle}), 200
+        return jsonify({'message': 'already registered', 'handle': handle}), 200
 
-    # New entries default criteria to False (will be set by admin/import)
+    # New entry
     e = Entry(
+        fname=data.get('fname', ''),
+        lname=data.get('lname', ''),
         instagram_handle=handle,
-        c1=False,
-        c2=False,
-        c3=False,
-        c4=False,
-        inAttendance=True,
     )
     db.session.add(e)
     db.session.commit()
@@ -104,9 +99,16 @@ def auth_login():
 def admin_draw():
     # Run the draw and return winners as JSON
     winners = drawWinners()
-    out = [{'handle': w.instagram_handle} for w in winners]
+    out = [{'name': f"{w.fname} {w.lname}", 'handle': w.instagram_handle} for w in winners]
     return jsonify({'winners': out})
 
+
+@admin_bp.route('/reset', methods=['POST'])
+@jwt_required
+def admin_reset():
+    # Reset all selections so another draw can be run
+    resetSelection()
+    return jsonify({'message': 'Selection reset'})
 
 @admin_bp.route('/attendees', methods=['GET'])
 @jwt_required
@@ -114,12 +116,9 @@ def admin_attendees():
     # Return all entries as JSON for admin UI
     entries = Entry.query.order_by(Entry.entered_at.desc()).all()
     out = [{
+        'fname': e.fname,
+        'lname': e.lname,
         'handle': e.instagram_handle,
-        'c1': e.c1,
-        'c2': e.c2,
-        'c3': e.c3,
-        'c4': e.c4,
-        'inAttendance': e.inAttendance,
         'is_selected': e.is_selected
     } for e in entries]
     return jsonify({'entries': out})
@@ -130,12 +129,12 @@ def admin_attendees():
 def admin_export():
     # Export all entries as CSV for audit
     import csv, io
-    cols = ['id', 'instagram_handle', 'entered_at', 'c1', 'c2', 'c3', 'c4', 'inAttendance', 'is_selected']
+    cols = ['id', 'fname', 'lname', 'instagram_handle', 'entered_at', 'is_selected']
     si = io.StringIO()
     writer = csv.writer(si)
     writer.writerow(cols)
     for e in Entry.query.order_by(Entry.id).all():
-        writer.writerow([e.id, e.instagram_handle, e.entered_at, e.c1, e.c2, e.c3, e.c4, e.inAttendance, e.is_selected])
+        writer.writerow([e.id, e.fname, e.lname, e.instagram_handle, e.entered_at, e.is_selected])
     output = make_response(si.getvalue())
     output.headers['Content-Type'] = 'text/csv'
     output.headers['Content-Disposition'] = 'attachment; filename=entries.csv'

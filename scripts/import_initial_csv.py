@@ -147,10 +147,6 @@ def import_csv(path: str, skip_existing=True):
 
             entry = Entry(
                 instagram_handle=handle,
-                c1=cvals.get(1, False),
-                c2=cvals.get(2, False),
-                c3=cvals.get(3, False),
-                c4=cvals.get(4, False),
             )
             db.session.add(entry)
             added += 1

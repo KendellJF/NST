@@ -21,7 +21,7 @@ def create_app(test_config=None):
         ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME', 'admin'),
         ADMIN_PASSWORD=os.environ.get('ADMIN_PASSWORD', 'password'),
         INITIAL_CSV_PATH=os.environ.get('INITIAL_CSV_PATH', 'data/guests.csv'),
-        INITIAL_CSV_ON_STARTUP=os.environ.get('INITIAL_CSV_ON_STARTUP', '1') in ('1', 'true', 'yes'),
+        INITIAL_CSV_ON_STARTUP=os.environ.get('INITIAL_CSV_ON_STARTUP', '0') in ('1', 'true', 'yes'),
     )
 
     if test_config is not None:

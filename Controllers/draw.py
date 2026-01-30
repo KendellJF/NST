@@ -4,9 +4,8 @@ from sqlalchemy import func
 from models import db, Entry
 
 def getEligible():
-    """Retrieve all attended entries (in attendance) that haven't been selected yet."""
+    """Retrieve all entries that haven't been selected yet."""
     return Entry.query.filter(
-        Entry.inAttendance == True,
         Entry.is_selected == False
     ).all()
 
@@ -29,5 +28,5 @@ def drawWinners():
 
 def resetSelection():
     """Reset the selection status of all entries."""
-    Entry.query.update({Entry.is_selected: False})
+    db.session.query(Entry).update({Entry.is_selected: False}, synchronize_session=False)
     db.session.commit()

@@ -18,8 +18,16 @@
 		<h1>Event Check-in</h1>
 		<form id="checkin">
 			<label>
-				Instagram handle
-				<input type="text" name="instagram_handle" id="instagram_handle" placeholder="e.g. @username" required autofocus>
+				First Name
+				<input type="text" name="fname" id="fname" placeholder="First Name" required autofocus>
+			</label>
+			<label>
+				Last Name
+				<input type="text" name="lname" id="lname" placeholder="Last Name" required>
+			</label>
+			<label>
+				Instagram Handle
+				<input type="text" name="instagram_handle" id="instagram_handle" placeholder="e.g. @username" required>
 			</label>
 
 			<div style="margin-top:16px">
@@ -30,7 +38,7 @@
 
 		<div id="result" aria-live="polite"></div>
 		<hr>
-		<p style="font-size:0.9rem;color:#666">If you're attending and your handle is on the invited list, check-in will be recorded. If not, you'll be added to the list.</p>
+		<p style="font-size:0.9rem;color:#666">Enter your name and Instagram handle to join the giveaway!</p>
 	</div>
 
 	<script>
@@ -39,10 +47,12 @@
 		document.getElementById('checkin').addEventListener('submit', async function(e){
 			e.preventDefault();
 			const form = e.target;
+			const fname = form.fname.value.trim();
+			const lname = form.lname.value.trim();
 			const handle = normalize(form.instagram_handle.value);
-			if(!handle){ document.getElementById('result').textContent = 'Enter a handle.'; return; }
+			if(!fname || !lname || !handle){ document.getElementById('result').textContent = 'All fields required.'; return; }
 
-			const payload = { instagram_handle: handle };
+			const payload = { fname, lname, instagram_handle: handle };
 
 			try{
 				const res = await fetch('/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});

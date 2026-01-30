@@ -42,19 +42,20 @@
 		<!-- Protected Admin Controls (hidden until logged in) -->
 		<div class="card" id="adminControls" style="display:none">
 			<h2>Draw Winners</h2>
-			<p>Click below to randomly select 4 winners from eligible attendees (all criteria must be true).</p>
+			<p>Click below to randomly select 4 winners from all entries.</p>
 			<button id="drawBtn">Run Draw</button>
+			<button class="secondary" id="resetBtn">Reset Selection</button>
 			<button class="secondary" id="exportBtn">Export CSV</button>
 			<div id="drawResult"></div>
 		</div>
 
 		<div class="card" id="attendeeList" style="display:none">
-			<h2>Attendees</h2>
-			<p><span id="attendeeCount">0</span> checked in · <span id="eligibleCount">0</span> eligible</p>
+			<h2>Entries</h2>
+			<p><span id="attendeeCount">0</span> total entries</p>
 			<button class="secondary" id="refreshBtn">Refresh</button>
 			<table id="attendeeTable">
 				<thead>
-					<tr><th>Handle</th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>Attended</th><th>Selected</th></tr>
+					<tr><th>First Name</th><th>Last Name</th><th>Handle</th><th>Selected</th></tr>
 				</thead>
 				<tbody></tbody>
 			</table>
@@ -90,7 +91,7 @@
 				const js = await res.json().catch(()=>({}));
 				if(res.ok){
 					const winners = js.winners || [];
-					showDrawResult(`Draw complete! ${winners.length} winner(s): ${winners.map(w=>w.handle).join(', ')}`, 'success');
+					showDrawResult(`Draw complete! ${winners.length} winner(s): ${winners.map(w=>`${w.name} [@${w.handle}]`).join(', ')}`, 'success');
 					loadAttendees();
 				} else {
 					showDrawResult(js.error || 'Draw failed', 'error');
@@ -101,6 +102,20 @@
 		document.getElementById('exportBtn').addEventListener('click', ()=>{
 			if(!token) return;
 			window.location.href = '/admin/export';
+		});
+
+		document.getElementById('resetBtn').addEventListener('click', async ()=>{
+			if(!token) return;
+			try{
+				const res = await fetch('/admin/reset', {method:'POST', headers:{'Authorization':'Bearer '+token}});
+				const js = await res.json().catch(()=>({}));
+				if(res.ok){
+					showDrawResult('Selection reset! All entries cleared.', 'success');
+					loadAttendees();
+				} else {
+					showDrawResult(js.error || 'Reset failed', 'error');
+				}
+			}catch(err){ showDrawResult('Network error', 'error'); }
 		});
 
 		document.getElementById('refreshBtn').addEventListener('click', loadAttendees);
@@ -131,20 +146,18 @@
 				const js = await res.json().catch(()=>({}));
 				if(res.ok && js.entries){
 					const entries = js.entries;
-					document.getElementById('attendeeCount').textContent = entries.filter(e=>e.inAttendance).length;
-					document.getElementById('eligibleCount').textContent = entries.filter(e=>e.c1&&e.c2&&e.c3&&e.c4).length;
+					document.getElementById('attendeeCount').textContent = entries.length;
 					const tbody = document.querySelector('#attendeeTable tbody');
 					tbody.innerHTML = entries.map(e=>`<tr>
+						<td>${e.fname || ''}</td>
+						<td>${e.lname || ''}</td>
 						<td>${e.handle}</td>
-						<td>${e.c1?'✓':'✗'}</td>
-						<td>${e.c2?'✓':'✗'}</td>
-						<td>${e.c3?'✓':'✗'}</td>
-						<td>${e.c4?'✓':'✗'}</td>
-						<td>${e.inAttendance?'✓':'✗'}</td>
 						<td>${e.is_selected?'✓':'✗'}</td>
 					</tr>`).join('');
+				} else {
+					console.error('Failed to load attendees:', js.error || 'Unknown error');
 				}
-			}catch(err){}
+			}catch(err){ console.error('Error loading attendees:', err); }
 		}
 	</script>
 </body>
