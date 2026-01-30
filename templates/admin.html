@@ -53,6 +53,7 @@
 			<h2>Entries</h2>
 			<p><span id="attendeeCount">0</span> total entries</p>
 			<button class="secondary" id="refreshBtn">Refresh</button>
+			<button class="secondary" id="clearAllBtn" style="background:#c62828;color:#fff;border-color:#c62828">Clear All Data</button>
 			<table id="attendeeTable">
 				<thead>
 					<tr><th>First Name</th><th>Last Name</th><th>Handle</th><th>Selected</th></tr>
@@ -119,6 +120,32 @@
 		});
 
 		document.getElementById('refreshBtn').addEventListener('click', loadAttendees);
+
+		document.getElementById('clearAllBtn').addEventListener('click', async ()=>{
+			if(!token) return;
+			if(!confirm('⚠️ WARNING: This will permanently delete ALL entries! Are you sure?')) return;
+			
+			const password = prompt('Enter the special clear database password:');
+			if(!password) return;
+			
+			try{
+				const res = await fetch('/admin/clear-all', {
+					method:'POST', 
+					headers:{
+						'Authorization':'Bearer '+token,
+						'Content-Type':'application/json'
+					},
+					body: JSON.stringify({password})
+				});
+				const js = await res.json().catch(()=>({}));
+				if(res.ok){
+					showDrawResult('✅ All entries deleted!', 'success');
+					loadAttendees();
+				} else {
+					showDrawResult('❌ ' + (js.error || 'Clear failed'), 'error');
+				}
+			}catch(err){ showDrawResult('Network error', 'error'); }
+		});
 
 		function showAdmin(){
 			document.getElementById('loginCard').style.display = 'none';

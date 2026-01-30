@@ -110,6 +110,28 @@ def admin_reset():
     resetSelection()
     return jsonify({'message': 'Selection reset'})
 
+
+@admin_bp.route('/clear-all', methods=['POST'])
+@jwt_required
+def admin_clear_all():
+    # Delete ALL entries from the database - requires special password
+    data = request.get_json() or {}
+    password = data.get('password')
+    
+    # Check the special clear password
+    clear_password = current_app.config.get('CLEAR_DB_PASSWORD')
+    if password != clear_password:
+        return jsonify({'error': 'Invalid clear password'}), 403
+    
+    try:
+        Entry.query.delete()
+        db.session.commit()
+        return jsonify({'message': 'All entries deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/attendees', methods=['GET'])
 @jwt_required
 def admin_attendees():

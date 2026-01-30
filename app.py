@@ -20,6 +20,7 @@ def create_app(test_config=None):
         JWT_EXP_MINUTES=int(os.environ.get('JWT_EXP_MINUTES', '60')),
         ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME', 'admin'),
         ADMIN_PASSWORD=os.environ.get('ADMIN_PASSWORD', 'password'),
+        CLEAR_DB_PASSWORD=os.environ.get('CLEAR_DB_PASSWORD', 'delete-all-data'),
         INITIAL_CSV_PATH=os.environ.get('INITIAL_CSV_PATH', 'data/guests.csv'),
         INITIAL_CSV_ON_STARTUP=os.environ.get('INITIAL_CSV_ON_STARTUP', '0') in ('1', 'true', 'yes'),
     )
