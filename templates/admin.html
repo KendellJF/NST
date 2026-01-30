@@ -65,7 +65,31 @@
 
 	<script>
 		let token = localStorage.getItem('access_token');
-		if(token){ showAdmin(); }
+		
+		// Validate token on page load
+		if(token){ 
+			validateAndShowAdmin();
+		}
+
+		async function validateAndShowAdmin(){
+			// Try to fetch attendees to verify token is valid
+			try{
+				const res = await fetch('/admin/attendees', {headers:{'Authorization':'Bearer '+token}});
+				if(res.ok){
+					showAdmin();
+				} else {
+					// Token is invalid/expired, clear it and show login
+					localStorage.removeItem('access_token');
+					token = null;
+					document.getElementById('loginCard').style.display = 'block';
+				}
+			}catch(err){
+				// Network error, clear token and show login
+				localStorage.removeItem('access_token');
+				token = null;
+				document.getElementById('loginCard').style.display = 'block';
+			}
+		}
 
 		document.getElementById('loginForm').addEventListener('submit', async function(e){
 			e.preventDefault();
