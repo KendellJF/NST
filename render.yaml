@@ -27,7 +27,9 @@ services:
       - key: ADMIN_PASSWORD
         generateValue: true
       - key: DATABASE_URL
-        value: sqlite:////tmp/app.db
+        fromDatabase:
+          name: nst-db
+          property: connectionString
       - key: PORT
         value: 10000
 
